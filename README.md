@@ -2,6 +2,8 @@
 
 AI-powered backend for generating short educational cartoon videos. The system uses AI agents to moderate topics, generate scripts, synthesize voices, create images, and compose videos — orchestrated as a step-by-step pipeline with retry support.
 
+![Cat characters — teacher and student](cats.jpeg)
+
 ## Architecture
 
 ```
@@ -22,7 +24,7 @@ infra/
 2. **Script** — AI generates structured script with scenes, dialogue, and image prompts
 3. **Voice** — ElevenLabs synthesizes teacher/student dialogue audio
 4. **Image** — DALL-E 3 generates scene illustrations (refined by storyboard agent)
-5. **Video** — Remotion composes final video from images + audio
+5. **Video** — Runway animates scene images, FFmpeg composes final video with audio
 6. **QC** — AI reviews generated content for quality
 
 ## Prerequisites
