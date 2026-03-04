@@ -1,4 +1,4 @@
-import { schemaTask, AbortTaskRunError } from "@trigger.dev/sdk/v3";
+import { schemaTask, AbortTaskRunError } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { runModeration, OpenAILLMProvider } from "@animated-edu/core";
 import { env } from "@animated-edu/config";

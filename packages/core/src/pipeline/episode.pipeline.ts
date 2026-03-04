@@ -136,8 +136,8 @@ export async function runVoiceGeneration(
   script: Script,
   voice: VoiceProvider,
   storage: StorageProvider,
-  teacherVoiceId = "default-teacher",
-  studentVoiceId = "default-student",
+  teacherVoiceId: string,
+  studentVoiceId: string,
 ): Promise<string[]> {
   return executeStep({ jobId, step: StepName.VOICE }, async () => {
     const step = await prisma.jobStep.findUniqueOrThrow({

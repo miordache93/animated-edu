@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { prisma, StepName, StepStatus, JobStatus } from "@animated-edu/db";
-import { tasks } from "@trigger.dev/sdk/v3";
+import { tasks } from "@trigger.dev/sdk";
 import { R2StorageProvider, STEP_ORDER } from "@animated-edu/core";
 import { env } from "@animated-edu/config";
 

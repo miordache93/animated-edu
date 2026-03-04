@@ -1,4 +1,4 @@
-import { schemaTask } from "@trigger.dev/sdk/v3";
+import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import {
   runVoiceGeneration,
@@ -27,6 +27,13 @@ export const generateVoicesTask = schemaTask({
       bucketName: env.R2_BUCKET_NAME,
     });
 
-    return runVoiceGeneration(jobId, script, voice, storage);
+    return runVoiceGeneration(
+      jobId,
+      script,
+      voice,
+      storage,
+      env.ELEVENLABS_TEACHER_VOICE_ID,
+      env.ELEVENLABS_STUDENT_VOICE_ID,
+    );
   },
 });

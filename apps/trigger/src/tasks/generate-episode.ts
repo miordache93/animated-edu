@@ -1,4 +1,4 @@
-import { schemaTask } from "@trigger.dev/sdk/v3";
+import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { prisma, JobStatus, StepName, StepStatus } from "@animated-edu/db";
 import { logger } from "@animated-edu/config";

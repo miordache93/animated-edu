@@ -1,4 +1,4 @@
-import { schemaTask } from "@trigger.dev/sdk/v3";
+import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { runQualityChecks, OpenAILLMProvider } from "@animated-edu/core";
 import { env } from "@animated-edu/config";

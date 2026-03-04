@@ -6,18 +6,19 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "npx trigger.dev@latest dev"
+    "dev": "trigger dev --config trigger.config.ts --env-file ../../.env"
   },
   "dependencies": {
     "@animated-edu/config": "workspace:*",
     "@animated-edu/core": "workspace:*",
     "@animated-edu/db": "workspace:*",
-    "@trigger.dev/core": "^3.3.0",
-    "@trigger.dev/sdk": "^3.3.0",
+    "@trigger.dev/core": "4.4.2",
+    "@trigger.dev/sdk": "4.4.2",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@trigger.dev/build": "^3.3.0",
+    "@trigger.dev/build": "4.4.2",
+    "trigger.dev": "^4.4.2",
     "typescript": "^5.7.0"
   }
 }

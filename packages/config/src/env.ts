@@ -22,6 +22,8 @@ const envSchema = z.object({
 
   // ElevenLabs (required for voice generation step)
   ELEVENLABS_API_KEY: z.string().default(""),
+  ELEVENLABS_TEACHER_VOICE_ID: z.string().default(""),
+  ELEVENLABS_STUDENT_VOICE_ID: z.string().default(""),
 
   // Cloudflare R2 (required for asset storage)
   R2_ACCOUNT_ID: z.string().default(""),

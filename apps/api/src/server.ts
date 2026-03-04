@@ -1,6 +1,8 @@
 import { createRequire } from "node:module";
 import express from "express";
+import swaggerUi from "swagger-ui-express";
 import { logger } from "@animated-edu/config";
+import { swaggerSpec } from "./swagger.js";
 import { jobsRouter } from "./routes/jobs.routes.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
@@ -13,6 +15,9 @@ const port = Number(process.env.PORT) || 3000;
 // Middleware
 app.use(pinoHttp({ logger }) as express.RequestHandler);
 app.use(express.json({ limit: "1mb" }));
+
+// Swagger UI
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check
 app.get("/health", (_req, res) => {
