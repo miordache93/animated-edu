@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.trigger/
+*.tsbuildinfo
+.turbo/
+.DS_Store

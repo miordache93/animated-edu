@@ -1,0 +1,25 @@
+{
+  "name": "@animated-edu/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch --env-file=../../.env src/server.ts"
+  },
+  "dependencies": {
+    "@animated-edu/config": "workspace:*",
+    "@animated-edu/core": "workspace:*",
+    "@animated-edu/db": "workspace:*",
+    "@trigger.dev/sdk": "^3.3.0",
+    "express": "^4.21.0",
+    "pino-http": "^10.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

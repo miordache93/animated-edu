@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum StepName {
+  MODERATION
+  SCRIPT
+  VOICE
+  IMAGE
+  VIDEO
+  QC
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum AssetType {
+  SCRIPT_JSON
+  VOICE_TEACHER
+  VOICE_STUDENT
+  SCENE_IMAGE
+  FINAL_VIDEO
+}
+
+model Job {
+  id             String    @id @default(uuid())
+  topic          String
+  status         JobStatus @default(PENDING)
+  language       String    @default("en")
+  targetDuration Int       @default(60)
+  triggerRunId   String?
+  errorMessage   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  steps  JobStep[]
+  assets Asset[]
+
+  @@map("jobs")
+}
+
+model JobStep {
+  id           String     @id @default(uuid())
+  jobId        String
+  step         StepName
+  status       StepStatus @default(PENDING)
+  input        Json?
+  output       Json?
+  durationMs   Int?
+  costCents    Int?
+  attempts     Int        @default(0)
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  job    Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@unique([jobId, step])
+  @@map("job_steps")
+}
+
+model Asset {
+  id         String    @id @default(uuid())
+  jobId      String
+  stepId     String?
+  type       AssetType
+  storageKey String
+  mimeType   String
+  sizeBytes  Int?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+
+  job  Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  step JobStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
+
+  @@map("assets")
+}

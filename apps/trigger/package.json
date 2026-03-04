@@ -1,0 +1,23 @@
+{
+  "name": "@animated-edu/trigger",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "npx trigger.dev@latest dev"
+  },
+  "dependencies": {
+    "@animated-edu/config": "workspace:*",
+    "@animated-edu/core": "workspace:*",
+    "@animated-edu/db": "workspace:*",
+    "@trigger.dev/core": "^3.3.0",
+    "@trigger.dev/sdk": "^3.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@trigger.dev/build": "^3.3.0",
+    "typescript": "^5.7.0"
+  }
+}
