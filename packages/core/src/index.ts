@@ -22,12 +22,17 @@ export {
   type VoiceInfo,
   type ImageProvider,
   type ImageGenerationOptions,
-  type VideoProvider,
+  type VideoAnimationProvider,
+  type VideoAnimationInput,
+  type VideoAnimationResult,
+  type VideoComposer,
   type VideoCompositionInput,
+  type SceneCompositionInput,
   OpenAILLMProvider,
   ElevenLabsVoiceProvider,
   OpenAIDalleImageProvider,
-  RemotionVideoProvider,
+  RunwayVideoAnimationProvider,
+  FFmpegVideoComposer,
 } from "./providers/index.js";
 
 // Storage

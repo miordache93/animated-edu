@@ -25,6 +25,9 @@ const envSchema = z.object({
   ELEVENLABS_TEACHER_VOICE_ID: z.string().default(""),
   ELEVENLABS_STUDENT_VOICE_ID: z.string().default(""),
 
+  // Runway (required for video animation step)
+  RUNWAY_API_KEY: z.string().default(""),
+
   // Cloudflare R2 (required for asset storage)
   R2_ACCOUNT_ID: z.string().default(""),
   R2_ACCESS_KEY_ID: z.string().default(""),

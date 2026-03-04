@@ -1,12 +1,13 @@
 import type { StepName } from "@animated-edu/db";
-import type { ImageProvider, LLMProvider, VoiceProvider, VideoProvider } from "../providers/types.js";
+import type { ImageProvider, LLMProvider, VoiceProvider, VideoAnimationProvider, VideoComposer } from "../providers/types.js";
 import type { StorageProvider } from "../storage/types.js";
 
 export interface PipelineDependencies {
   llm: LLMProvider;
   voice: VoiceProvider;
   image: ImageProvider;
-  video: VideoProvider;
+  animator: VideoAnimationProvider;
+  composer: VideoComposer;
   storage: StorageProvider;
 }
 

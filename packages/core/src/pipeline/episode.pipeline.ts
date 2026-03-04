@@ -3,10 +3,11 @@ import { logger } from "@animated-edu/config";
 import type { LLMProvider } from "../providers/types.js";
 import type { VoiceProvider } from "../providers/types.js";
 import type { ImageProvider } from "../providers/types.js";
-import type { VideoProvider } from "../providers/types.js";
+import type { VideoAnimationProvider, VideoComposer } from "../providers/types.js";
 import type { StorageProvider } from "../storage/types.js";
 import { runModerationAgent, type ModerationResult } from "../agents/moderation.agent.js";
 import { runScriptAgent, type Script } from "../agents/script.agent.js";
+import type { Scene } from "../agents/script.agent.js";
 import { runStoryboardAgent } from "../agents/storyboard.agent.js";
 import type { StepContext } from "./types.js";
 
@@ -240,12 +241,15 @@ export async function runImageGeneration(
   });
 }
 
+function buildMotionPrompt(scene: Scene): string {
+  return `Gentle animation of educational cartoon scene. Characters have slight breathing motions and subtle idle movements. ${scene.narration.substring(0, 150)}. Smooth camera, child-friendly cartoon style.`;
+}
+
 export async function runVideoComposition(
   jobId: string,
   script: Script,
-  imageAssetKeys: string[],
-  voiceAssetKeys: string[],
-  video: VideoProvider,
+  animator: VideoAnimationProvider,
+  composer: VideoComposer,
   storage: StorageProvider,
 ): Promise<string> {
   return executeStep({ jobId, step: StepName.VIDEO }, async () => {
@@ -253,20 +257,88 @@ export async function runVideoComposition(
       where: { jobId_step: { jobId, step: StepName.VIDEO } },
     });
 
-    // Generate signed URLs for the video composer
-    const scenes = await Promise.all(
-      script.scenes.map(async (scene, i) => ({
-        imageUrl: await storage.getSignedUrl(
-          imageAssetKeys[i] ?? `jobs/${jobId}/images/scene-${scene.sceneNumber}.png`,
-        ),
-        audioUrl: await storage.getSignedUrl(
-          voiceAssetKeys[i] ?? `jobs/${jobId}/voice/teacher-scene-${scene.sceneNumber}.mp3`,
-        ),
-        durationSeconds: scene.durationSeconds,
-      })),
+    // Query assets from DB by type, index by sceneNumber
+    const [imageAssets, teacherVoiceAssets, studentVoiceAssets] = await Promise.all([
+      prisma.asset.findMany({ where: { jobId, type: AssetType.SCENE_IMAGE } }),
+      prisma.asset.findMany({ where: { jobId, type: AssetType.VOICE_TEACHER } }),
+      prisma.asset.findMany({ where: { jobId, type: AssetType.VOICE_STUDENT } }),
+    ]);
+
+    const imageByScene = new Map(
+      imageAssets.map((a) => [(a.metadata as Record<string, unknown>)?.sceneNumber as number, a.storageKey]),
+    );
+    const teacherByScene = new Map(
+      teacherVoiceAssets.map((a) => [(a.metadata as Record<string, unknown>)?.sceneNumber as number, a.storageKey]),
+    );
+    const studentByScene = new Map(
+      studentVoiceAssets.map((a) => [(a.metadata as Record<string, unknown>)?.sceneNumber as number, a.storageKey]),
     );
 
-    const videoBuffer = await video.compose({ scenes });
+    // For each scene: animate image → upload silent clip to R2
+    const silentClipKeys = await Promise.all(
+      script.scenes.map(async (scene) => {
+        const imageKey = imageByScene.get(scene.sceneNumber);
+        if (!imageKey) {
+          throw new Error(`No image asset found for scene ${scene.sceneNumber}`);
+        }
+
+        const imageUrl = await storage.getSignedUrl(imageKey);
+        const motionPrompt = buildMotionPrompt(scene);
+
+        logger.info({ jobId, sceneNumber: scene.sceneNumber }, "Animating scene image with Runway");
+
+        const result = await animator.animate({
+          imageUrl,
+          promptText: motionPrompt,
+          durationSeconds: scene.durationSeconds <= 7 ? 5 : 10,
+          ratio: "1280:768",
+        });
+
+        // Re-upload to R2 (Runway URLs expire)
+        const response = await fetch(result.videoUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download Runway video: ${response.status}`);
+        }
+        const videoBuffer = Buffer.from(await response.arrayBuffer());
+        const silentKey = `jobs/${jobId}/video/scene-${scene.sceneNumber}-silent.mp4`;
+        await storage.upload(silentKey, videoBuffer, "video/mp4");
+
+        return { sceneNumber: scene.sceneNumber, silentKey };
+      }),
+    );
+
+    const silentByScene = new Map(silentClipKeys.map((s) => [s.sceneNumber, s.silentKey]));
+
+    // Build composition input with signed URLs
+    const compositionScenes = await Promise.all(
+      script.scenes.map(async (scene) => {
+        const silentKey = silentByScene.get(scene.sceneNumber)!;
+        const teacherKey = teacherByScene.get(scene.sceneNumber);
+        const studentKey = studentByScene.get(scene.sceneNumber);
+
+        if (!teacherKey || !studentKey) {
+          throw new Error(`Missing voice assets for scene ${scene.sceneNumber}`);
+        }
+
+        const [silentVideoUrl, teacherAudioUrl, studentAudioUrl] = await Promise.all([
+          storage.getSignedUrl(silentKey),
+          storage.getSignedUrl(teacherKey),
+          storage.getSignedUrl(studentKey),
+        ]);
+
+        return {
+          sceneNumber: scene.sceneNumber,
+          silentVideoUrl,
+          teacherAudioUrl,
+          studentAudioUrl,
+          durationSeconds: scene.durationSeconds,
+        };
+      }),
+    );
+
+    logger.info({ jobId, sceneCount: compositionScenes.length }, "Composing final video with FFmpeg");
+
+    const videoBuffer = await composer.compose({ scenes: compositionScenes });
     const key = `jobs/${jobId}/video/final.mp4`;
     await storage.upload(key, videoBuffer, "video/mp4");
 

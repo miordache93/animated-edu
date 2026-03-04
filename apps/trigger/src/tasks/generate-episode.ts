@@ -41,22 +41,6 @@ export const generateEpisodeTask = schemaTask({
         script = scriptStep?.output as unknown as Script | undefined;
       }
 
-      let voiceAssetKeys: string[] | undefined;
-      if (startIndex > STEP_ORDER.indexOf(StepName.VOICE)) {
-        const voiceAssets = await prisma.asset.findMany({
-          where: { jobId, type: { in: ["VOICE_TEACHER", "VOICE_STUDENT"] } },
-        });
-        voiceAssetKeys = voiceAssets.map((a) => a.storageKey);
-      }
-
-      let imageAssetKeys: string[] | undefined;
-      if (startIndex > STEP_ORDER.indexOf(StepName.IMAGE)) {
-        const imageAssets = await prisma.asset.findMany({
-          where: { jobId, type: "SCENE_IMAGE" },
-        });
-        imageAssetKeys = imageAssets.map((a) => a.storageKey);
-      }
-
       // Execute steps sequentially
       for (let i = startIndex; i < STEP_ORDER.length; i++) {
         const step = STEP_ORDER[i]!;
@@ -79,13 +63,11 @@ export const generateEpisodeTask = schemaTask({
 
           case StepName.VOICE: {
             if (!script) throw new Error("Script required for voice generation");
-            const result = await generateVoicesTask.triggerAndWait({
+            const voiceResult = await generateVoicesTask.triggerAndWait({
               jobId,
               script,
             });
-            if (result.ok) {
-              voiceAssetKeys = result.output;
-            } else {
+            if (!voiceResult.ok) {
               throw new Error("Voice generation failed");
             }
             break;
@@ -93,13 +75,11 @@ export const generateEpisodeTask = schemaTask({
 
           case StepName.IMAGE: {
             if (!script) throw new Error("Script required for image generation");
-            const result = await generateImagesTask.triggerAndWait({
+            const imageResult = await generateImagesTask.triggerAndWait({
               jobId,
               script,
             });
-            if (result.ok) {
-              imageAssetKeys = result.output;
-            } else {
+            if (!imageResult.ok) {
               throw new Error("Image generation failed");
             }
             break;
@@ -107,13 +87,9 @@ export const generateEpisodeTask = schemaTask({
 
           case StepName.VIDEO: {
             if (!script) throw new Error("Script required for video composition");
-            if (!imageAssetKeys) throw new Error("Image assets required for video");
-            if (!voiceAssetKeys) throw new Error("Voice assets required for video");
             await generateVideoTask.triggerAndWait({
               jobId,
               script,
-              imageAssetKeys,
-              voiceAssetKeys,
             });
             break;
           }

@@ -22,11 +22,16 @@ Script summary: "{summary}"
 Original scenes:
 {scenes}
 
+IMPORTANT - Every image prompt MUST include these exact character descriptions:
+- Teacher: A grey British Shorthair cat with yellow eyes, wearing round glasses, standing upright, pointing with a wooden stick. Stern but warm expression.
+- Student: A cream-colored Scottish Fold cat with blue eyes and folded ears, wearing a pink collar with a flower charm. Cute, curious expression.
+Both in consistent flat 2D cartoon illustration style with clean outlines.
+
 Create refined image prompts that:
-- Maintain consistent character designs (same teacher and student appearance across all scenes)
+- Maintain consistent character designs using the exact descriptions above in every prompt
 - Use a cohesive color palette and art style throughout
 - Include specific details about character positions, expressions, and backgrounds
-- Specify the cartoon/illustration style (e.g., "flat vector illustration", "2D cartoon style")
+- Specify the cartoon/illustration style as "flat 2D cartoon illustration with clean outlines"
 - Include educational visual elements relevant to each scene's content
 
 Respond with a JSON object containing:

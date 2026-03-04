@@ -1,5 +1,6 @@
 import { defineConfig } from "@trigger.dev/sdk";
 import { prismaExtension } from "@trigger.dev/build/extensions/prisma";
+import { ffmpeg } from "@trigger.dev/build/extensions/core";
 
 export default defineConfig({
   project: "proj_aiafsodslovtkpyuliak",
@@ -19,6 +20,7 @@ export default defineConfig({
       prismaExtension({
         schema: "../../packages/db/prisma/schema.prisma",
       }),
+      ffmpeg({ version: "7" }),
     ],
   },
 });

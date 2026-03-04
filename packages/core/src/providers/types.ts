@@ -45,14 +45,33 @@ export interface ImageProvider {
   generate(prompt: string, opts?: ImageGenerationOptions): Promise<Buffer>;
 }
 
-export interface VideoCompositionInput {
-  scenes: {
-    imageUrl: string;
-    audioUrl: string;
-    durationSeconds: number;
-  }[];
+export interface VideoAnimationInput {
+  imageUrl: string;
+  promptText: string;
+  durationSeconds: 5 | 10;
+  ratio?: "1280:768" | "768:1280";
 }
 
-export interface VideoProvider {
+export interface VideoAnimationResult {
+  videoUrl: string;
+}
+
+export interface VideoAnimationProvider {
+  animate(input: VideoAnimationInput): Promise<VideoAnimationResult>;
+}
+
+export interface SceneCompositionInput {
+  sceneNumber: number;
+  silentVideoUrl: string;
+  teacherAudioUrl: string;
+  studentAudioUrl: string;
+  durationSeconds: number;
+}
+
+export interface VideoCompositionInput {
+  scenes: SceneCompositionInput[];
+}
+
+export interface VideoComposer {
   compose(input: VideoCompositionInput): Promise<Buffer>;
 }
