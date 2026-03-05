@@ -205,6 +205,7 @@ export async function runImageGeneration(
   llm: LLMProvider,
   image: ImageProvider,
   storage: StorageProvider,
+  referenceImages?: Buffer[],
 ): Promise<string[]> {
   return executeStep({ jobId, step: StepName.IMAGE }, async () => {
     // Refine prompts with storyboard agent for visual consistency
@@ -219,6 +220,11 @@ export async function runImageGeneration(
     for (const scene of storyboard.scenes) {
       const imageBuffer = await image.generate(
         `${storyboard.styleGuide}\n\n${scene.imagePrompt}`,
+        {
+          referenceImages,
+          size: "1536x1024",
+          quality: "high",
+        },
       );
       const key = `jobs/${jobId}/images/scene-${scene.sceneNumber}.png`;
       await storage.upload(key, imageBuffer, "image/png");
@@ -242,7 +248,15 @@ export async function runImageGeneration(
 }
 
 function buildMotionPrompt(scene: Scene): string {
-  return `Gentle animation of educational cartoon scene. Characters have slight breathing motions and subtle idle movements. ${scene.narration.substring(0, 150)}. Smooth camera, child-friendly cartoon style.`;
+  return [
+    "Animated cartoon scene for a children's educational video.",
+    "The cat teacher gestures and points at the board while explaining.",
+    "The cat student nods, tilts head curiously, and reacts with expressive eyes.",
+    "Characters move naturally with lively body language — head turns, arm gestures, ear twitches, tail sways.",
+    "Background elements have subtle parallax motion.",
+    `Scene context: ${scene.narration.substring(0, 120)}.`,
+    "Smooth 24fps animation, colorful 2D cartoon style, no camera shake.",
+  ].join(" ");
 }
 
 export async function runVideoComposition(
@@ -275,37 +289,47 @@ export async function runVideoComposition(
     );
 
     // For each scene: animate image → upload silent clip to R2
-    const silentClipKeys = await Promise.all(
-      script.scenes.map(async (scene) => {
-        const imageKey = imageByScene.get(scene.sceneNumber);
-        if (!imageKey) {
-          throw new Error(`No image asset found for scene ${scene.sceneNumber}`);
-        }
+    // Process sequentially to avoid overwhelming Runway API and missing Trigger.dev heartbeats
+    const silentClipKeys: { sceneNumber: number; silentKey: string }[] = [];
+    for (const scene of script.scenes) {
+      const imageKey = imageByScene.get(scene.sceneNumber);
+      if (!imageKey) {
+        throw new Error(`No image asset found for scene ${scene.sceneNumber}`);
+      }
 
-        const imageUrl = await storage.getSignedUrl(imageKey);
-        const motionPrompt = buildMotionPrompt(scene);
+      // Skip if silent clip already exists in R2 (supports retry without re-charging Runway credits)
+      const silentKey = `jobs/${jobId}/video/scene-${scene.sceneNumber}-silent.mp4`;
+      try {
+        await storage.download(silentKey);
+        logger.info({ jobId, sceneNumber: scene.sceneNumber }, "Silent clip already exists, skipping animation");
+        silentClipKeys.push({ sceneNumber: scene.sceneNumber, silentKey });
+        continue;
+      } catch {
+        // Not found — proceed with animation
+      }
 
-        logger.info({ jobId, sceneNumber: scene.sceneNumber }, "Animating scene image with Runway");
+      const imageUrl = await storage.getSignedUrl(imageKey);
+      const motionPrompt = buildMotionPrompt(scene);
 
-        const result = await animator.animate({
-          imageUrl,
-          promptText: motionPrompt,
-          durationSeconds: scene.durationSeconds <= 7 ? 5 : 10,
-          ratio: "1280:768",
-        });
+      logger.info({ jobId, sceneNumber: scene.sceneNumber }, "Animating scene image with Runway");
 
-        // Re-upload to R2 (Runway URLs expire)
-        const response = await fetch(result.videoUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to download Runway video: ${response.status}`);
-        }
-        const videoBuffer = Buffer.from(await response.arrayBuffer());
-        const silentKey = `jobs/${jobId}/video/scene-${scene.sceneNumber}-silent.mp4`;
-        await storage.upload(silentKey, videoBuffer, "video/mp4");
+      const result = await animator.animate({
+        imageUrl,
+        promptText: motionPrompt,
+        durationSeconds: scene.durationSeconds <= 7 ? 5 : 10,
+        ratio: "1280:768",
+      });
 
-        return { sceneNumber: scene.sceneNumber, silentKey };
-      }),
-    );
+      // Re-upload to R2 (Runway URLs expire)
+      const response = await fetch(result.videoUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download Runway video: ${response.status}`);
+      }
+      const videoBuffer = Buffer.from(await response.arrayBuffer());
+      await storage.upload(silentKey, videoBuffer, "video/mp4");
+
+      silentClipKeys.push({ sceneNumber: scene.sceneNumber, silentKey });
+    }
 
     const silentByScene = new Map(silentClipKeys.map((s) => [s.sceneNumber, s.silentKey]));
 

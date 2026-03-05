@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { schemaTask } from "@trigger.dev/sdk";
 import { z } from "zod";
 import {
@@ -29,6 +31,16 @@ export const generateImagesTask = schemaTask({
       bucketName: env.R2_BUCKET_NAME,
     });
 
-    return runImageGeneration(jobId, script, llm, image, storage);
+    // Load character reference sheet for consistent character design
+    const catsRefPath = resolve(process.cwd(), "cats.jpeg");
+    let referenceImages: Buffer[] | undefined;
+    try {
+      const refBuffer = await readFile(catsRefPath);
+      referenceImages = [refBuffer];
+    } catch {
+      // Fall back to no reference if file not found (e.g. local dev without the file)
+    }
+
+    return runImageGeneration(jobId, script, llm, image, storage, referenceImages);
   },
 });

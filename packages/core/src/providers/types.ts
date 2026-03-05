@@ -36,9 +36,9 @@ export interface VoiceProvider {
 }
 
 export interface ImageGenerationOptions {
-  size?: "1024x1024" | "1024x1792" | "1792x1024";
-  quality?: "standard" | "hd";
-  style?: "vivid" | "natural";
+  size?: "1024x1024" | "1536x1024" | "1024x1536" | "auto";
+  quality?: "low" | "medium" | "high" | "auto";
+  referenceImages?: Buffer[];
 }
 
 export interface ImageProvider {

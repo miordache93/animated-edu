@@ -15,6 +15,7 @@ export const generateVideoTask = schemaTask({
     jobId: z.string().uuid(),
     script: scriptSchema,
   }),
+  maxDuration: 1800, // 30 min — Runway animation takes 2-3 min per scene
   retry: {
     maxAttempts: 2,
     minTimeoutInMs: 10000,
